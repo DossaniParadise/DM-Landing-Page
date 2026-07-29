@@ -164,6 +164,74 @@
       .board-top .tile{width:100%;}
     }
     @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto;}}
+
+    /* ===================== EMERGENCY EDITOR ===================== */
+    .gear{position:fixed;right:16px;bottom:16px;z-index:60;width:42px;height:42px;border-radius:50%;
+      border:1px solid var(--navy-200);background:#fff;color:var(--navy-700);cursor:pointer;
+      box-shadow:var(--shadow-md);display:grid;place-items:center;opacity:.72;
+      transition:opacity .15s ease,transform .25s var(--ease);}
+    .gear:hover{opacity:1;transform:rotate(35deg);}
+    .gear svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.7;
+      stroke-linecap:round;stroke-linejoin:round;}
+
+    .ov{position:fixed;inset:0;z-index:100;background:rgba(13,10,53,.5);backdrop-filter:blur(4px);
+      -webkit-backdrop-filter:blur(4px);display:grid;place-items:center;padding:1.25rem;
+      opacity:0;pointer-events:none;transition:opacity .18s var(--ease);}
+    .ov.open{opacity:1;pointer-events:auto;}
+    .card{background:#fff;border:1px solid var(--border-subtle);border-radius:var(--radius-xl);
+      box-shadow:0 30px 60px -20px rgba(13,10,53,.5);width:100%;transform:translateY(8px) scale(.985);
+      transition:transform .18s var(--ease);}
+    .ov.open .card{transform:none;}
+    .card.pw{max-width:360px;padding:1.6rem;text-align:center;}
+    .card.ed{max-width:720px;max-height:88vh;display:flex;flex-direction:column;overflow:hidden;}
+    .card h3{font-family:var(--font-display);font-weight:600;color:var(--text-heading);font-size:1.12rem;
+      letter-spacing:var(--tracking-wide);}
+    .card .sub{color:var(--text-muted);font-size:.82rem;margin-top:.3rem;line-height:1.45;}
+    .card .sub em{color:var(--navy-700);font-style:normal;font-weight:700;}
+
+    .pw input{width:100%;margin:1.1rem 0 .4rem;padding:.7rem .85rem;border:1px solid var(--border-subtle);
+      border-radius:var(--radius-lg);font:inherit;text-align:center;letter-spacing:.15em;}
+    .pw input:focus{outline:none;border-color:var(--navy-500);box-shadow:0 0 0 3px rgba(67,57,196,.15);}
+    .pw .err{color:var(--accent);font-size:.8rem;min-height:1.1rem;font-weight:600;}
+    .shake{animation:shake .32s;}
+    @keyframes shake{0%,100%{transform:none}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+
+    .ed-head{padding:1.25rem 1.4rem 1rem;border-bottom:1px solid var(--divider);}
+    .ed-body{padding:1rem 1.4rem;overflow:auto;flex:1;}
+    .ed-add-wrap{padding:0 1.4rem 1rem;}
+    .ed-foot{padding:.9rem 1.4rem;border-top:1px solid var(--divider);display:flex;gap:.5rem;
+      flex-wrap:wrap;align-items:center;justify-content:flex-end;}
+    .ed-note{font-size:.72rem;color:var(--text-muted);margin-right:auto;max-width:300px;line-height:1.4;}
+
+    .er{display:grid;grid-template-columns:46px 1fr auto;gap:.6rem;align-items:start;padding:.65rem;
+      border:1px solid var(--border-subtle);border-radius:var(--radius-lg);margin-bottom:.55rem;background:var(--gray-50);}
+    .er.feat{border-color:var(--navy-200);background:linear-gradient(180deg,var(--navy-50),#fff);}
+    .er-fav{width:46px;height:46px;border-radius:10px;background:#fff;border:1px solid var(--navy-100);
+      object-fit:contain;padding:9px;}
+    .er-fields{display:flex;flex-direction:column;gap:.35rem;min-width:0;}
+    .feat-badge{align-self:flex-start;font-family:var(--font-display);font-size:.58rem;letter-spacing:.14em;
+      text-transform:uppercase;color:var(--navy-700);background:var(--navy-100);border-radius:999px;padding:.12rem .5rem;}
+    .er-fields input{padding:.48rem .6rem;border:1px solid var(--border-subtle);border-radius:8px;
+      font:inherit;font-size:.85rem;width:100%;}
+    .er-fields input:focus{outline:none;border-color:var(--navy-500);box-shadow:0 0 0 3px rgba(67,57,196,.12);}
+    .er-ctrl{display:flex;flex-direction:column;gap:.28rem;}
+    .er-ctrl button{width:30px;height:26px;border:1px solid var(--border-subtle);background:#fff;border-radius:7px;
+      cursor:pointer;color:var(--text-muted);font-size:.85rem;line-height:1;display:grid;place-items:center;}
+    .er-ctrl button:hover{border-color:var(--navy-300);color:var(--navy-700);}
+    .er-ctrl button.rm:hover{border-color:var(--accent);color:var(--accent);}
+
+    .btn{font:inherit;font-weight:700;font-size:.84rem;border-radius:9px;padding:.6rem 1rem;cursor:pointer;
+      border:1px solid transparent;}
+    .btn-primary{background:var(--navy-700);color:#fff;}
+    .btn-primary:hover{background:var(--navy-800);}
+    .btn-ghost{background:#fff;border-color:var(--border-subtle);color:var(--text-body);}
+    .btn-ghost:hover{border-color:var(--navy-300);color:var(--navy-700);}
+    .btn-add{background:var(--navy-50);border:1px dashed var(--navy-300);color:var(--navy-700);width:100%;
+      padding:.7rem;border-radius:var(--radius-lg);font-weight:700;font-size:.85rem;cursor:pointer;}
+    .btn-add:hover{background:var(--navy-100);}
+    .code-out{width:100%;height:118px;margin-top:.6rem;font-family:monospace;font-size:.72rem;
+      border:1px solid var(--border-subtle);border-radius:8px;padding:.5rem;display:none;resize:vertical;}
+    .code-out.show{display:block;}
   </style>
 </head>
 
@@ -206,10 +274,49 @@
     <div class="updated">Updated<span class="tag" id="footer-date">July 2026</span></div>
   </footer>
 
+  <!-- Emergency editor: gear + password gate + editor -->
+  <button class="gear" id="gear" title="Edit links" aria-label="Edit links (emergency)">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 8 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H2a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 8a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V2a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H22a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+  </button>
+
+  <div class="ov" id="pw-modal" aria-hidden="true">
+    <div class="card pw" role="dialog" aria-modal="true" aria-label="Enter edit password">
+      <h3>Emergency edit</h3>
+      <p class="sub">Enter the edit password to change links on this device.</p>
+      <input type="password" id="pw-input" placeholder="Password" autocomplete="off" />
+      <div class="err" id="pw-err"></div>
+      <div style="display:flex;gap:.5rem;">
+        <button class="btn btn-ghost" id="pw-cancel" style="flex:1">Cancel</button>
+        <button class="btn btn-primary" id="pw-ok" style="flex:1">Unlock</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="ov" id="editor" aria-hidden="true">
+    <div class="card ed" role="dialog" aria-modal="true" aria-label="Edit portal links">
+      <div class="ed-head">
+        <h3>Edit portal links</h3>
+        <p class="sub">Add, edit, remove, or reorder tiles — the top entry is the featured one. Favicons load automatically from each link. Changes save to <em>this browser</em> only.</p>
+      </div>
+      <div class="ed-body" id="ed-list"></div>
+      <div class="ed-add-wrap">
+        <button class="btn-add" id="ed-add">+ Add link</button>
+        <textarea class="code-out" id="code-out" readonly aria-label="Code to paste into index.html"></textarea>
+      </div>
+      <div class="ed-foot">
+        <span class="ed-note">To make edits permanent for everyone, use “Copy for index.html” and paste into the file.</span>
+        <button class="btn btn-ghost" id="ed-copy">Copy for index.html</button>
+        <button class="btn btn-ghost" id="ed-reset">Reset</button>
+        <button class="btn btn-ghost" id="ed-cancel">Cancel</button>
+        <button class="btn btn-primary" id="ed-save">Save</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     /* APP DATA — first entry is the featured (top-centre) tile; the rest fill
        the two rows of five, in this order. Edit freely. */
-    const APPS = [
+    const DEFAULT_APPS = [
   {
     "name": "RBI · Okta",
     "cat": "Brand & Franchise",
@@ -288,6 +395,19 @@
     "icon": "data:image/png;base64,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"
   }
 ];
+    const STORAGE_KEY = "dpm_dm_apps_v1";
+    const EDIT_PASSWORD = "dpm6";
+    const clone = x => JSON.parse(JSON.stringify(x));
+    function loadApps(){
+      try{ const s=localStorage.getItem(STORAGE_KEY);
+        if(s){ const a=JSON.parse(s); if(Array.isArray(a)&&a.length) return a; } }catch(e){}
+      return clone(DEFAULT_APPS);
+    }
+    function saveApps(a){
+      try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(a)); return true; }
+      catch(e){ alert("Couldn't save — this browser is blocking local storage."); return false; }
+    }
+    let APPS = loadApps();
 
     const root = document.getElementById("app-root");
     const noResults = document.getElementById("no-results");
@@ -346,6 +466,103 @@
       if(e.key==="/"&&document.activeElement.tagName!=="INPUT"){e.preventDefault();sTop.focus();}
       else if(e.key==="Escape"&&document.activeElement===sTop){ sTop.value=""; filter(""); sTop.blur(); }
     });
+
+    function reRender(){
+      const b=document.querySelector(".board"); if(b) b.remove();
+      render(); filter(sTop.value||"");
+    }
+
+    /* ---------------- Emergency editor ---------------- */
+    const gear=document.getElementById("gear");
+    const pwModal=document.getElementById("pw-modal"), pwInput=document.getElementById("pw-input"),
+          pwErr=document.getElementById("pw-err");
+    const editor=document.getElementById("editor"), edList=document.getElementById("ed-list"),
+          codeOut=document.getElementById("code-out");
+    let unlocked=false, working=[];
+
+    const openOv=o=>{o.classList.add("open");o.setAttribute("aria-hidden","false");};
+    const closeOv=o=>{o.classList.remove("open");o.setAttribute("aria-hidden","true");};
+
+    gear.addEventListener("click",()=>{
+      if(unlocked){ openEditor(); }
+      else { pwErr.textContent=""; pwInput.value=""; openOv(pwModal); setTimeout(()=>pwInput.focus(),60); }
+    });
+    function tryUnlock(){
+      if(pwInput.value===EDIT_PASSWORD){ unlocked=true; closeOv(pwModal); openEditor(); }
+      else { pwErr.textContent="Incorrect password."; const c=pwModal.querySelector(".card");
+        c.classList.add("shake"); setTimeout(()=>c.classList.remove("shake"),340); }
+    }
+    document.getElementById("pw-ok").addEventListener("click",tryUnlock);
+    document.getElementById("pw-cancel").addEventListener("click",()=>closeOv(pwModal));
+    pwInput.addEventListener("keydown",e=>{ if(e.key==="Enter") tryUnlock(); });
+
+    function setFav(img,row){
+      const d=domainOf(row.url);
+      if(row.icon && /^data:image\//i.test(row.icon)) img.src=row.icon;
+      else if(d) img.src="https://www.google.com/s2/favicons?domain="+encodeURIComponent(d)+"&sz=64";
+      else img.removeAttribute("src");
+      img.onerror=()=>{ img.onerror=null; img.removeAttribute("src"); };
+    }
+    function mkInput(ph,val,on){ const i=document.createElement("input"); i.placeholder=ph;
+      i.value=val||""; i.addEventListener("input",e=>on(e.target.value)); return i; }
+    function mkBtn(t,cls,on){ const b=document.createElement("button"); b.type="button"; b.textContent=t;
+      if(cls) b.className=cls; b.addEventListener("click",on); return b; }
+
+    function entryEl(row,i){
+      const el=document.createElement("div"); el.className="er"+(i===0?" feat":"");
+      const fav=document.createElement("img"); fav.className="er-fav"; fav.alt=""; setFav(fav,row);
+      const fields=document.createElement("div"); fields.className="er-fields";
+      if(i===0){ const badge=document.createElement("span"); badge.className="feat-badge";
+        badge.textContent="Featured"; fields.appendChild(badge); }
+      fields.appendChild(mkInput("Name", row.name, v=>row.name=v));
+      fields.appendChild(mkInput("https://…", row.url, v=>{ row.url=v; row.icon=null; setFav(fav,row); }));
+      fields.appendChild(mkInput("Caption (optional)", row.desc, v=>row.desc=v));
+      const ctrl=document.createElement("div"); ctrl.className="er-ctrl";
+      ctrl.appendChild(mkBtn("↑","",()=>move(i,-1)));
+      ctrl.appendChild(mkBtn("↓","",()=>move(i,1)));
+      ctrl.appendChild(mkBtn("✕","rm",()=>{ working.splice(i,1); renderEditor(); }));
+      el.append(fav,fields,ctrl); return el;
+    }
+    function move(i,d){ const j=i+d; if(j<0||j>=working.length) return;
+      [working[i],working[j]]=[working[j],working[i]]; renderEditor(); }
+    function renderEditor(){ edList.innerHTML=""; working.forEach((r,i)=>edList.appendChild(entryEl(r,i))); }
+
+    function openEditor(){
+      working=clone(APPS).map(a=>({ name:a.name||"", url:a.url||"", desc:a.desc||"", icon:a.icon||null }));
+      renderEditor(); codeOut.classList.remove("show"); openOv(editor);
+    }
+    function collect(){
+      return working.map(r=>{
+        const o={ name:(r.name||"").trim()||domainOf(r.url)||"Link", url:(r.url||"").trim() };
+        if((r.desc||"").trim()) o.desc=r.desc.trim();
+        if(r.icon) o.icon=r.icon;   // preserved only if the URL wasn't changed
+        return o;
+      }).filter(r=>r.url);
+    }
+
+    document.getElementById("ed-add").addEventListener("click",()=>{
+      working.push({ name:"", url:"", desc:"", icon:null }); renderEditor();
+      const inputs=edList.querySelectorAll(".er:last-child input"); inputs[0] && inputs[0].focus();
+    });
+    document.getElementById("ed-cancel").addEventListener("click",()=>closeOv(editor));
+    document.getElementById("ed-save").addEventListener("click",()=>{
+      APPS=collect(); saveApps(APPS); reRender(); closeOv(editor);
+    });
+    document.getElementById("ed-reset").addEventListener("click",()=>{
+      if(!confirm("Reset to the built-in links? This clears your local edits on this browser.")) return;
+      try{ localStorage.removeItem(STORAGE_KEY); }catch(e){}
+      APPS=clone(DEFAULT_APPS); reRender(); openEditor();
+    });
+    document.getElementById("ed-copy").addEventListener("click",()=>{
+      const code=JSON.stringify(collect(),null,2);
+      codeOut.value=code; codeOut.classList.add("show"); codeOut.focus(); codeOut.select();
+      try{ navigator.clipboard.writeText(code); }catch(e){}
+    });
+
+    [pwModal,editor].forEach(o=>o.addEventListener("click",e=>{ if(e.target===o) closeOv(o); }));
+    document.addEventListener("keydown",e=>{ if(e.key==="Escape"){
+      if(editor.classList.contains("open")) closeOv(editor);
+      else if(pwModal.classList.contains("open")) closeOv(pwModal); } });
 
     render();
   </script>
