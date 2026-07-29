@@ -150,6 +150,8 @@
     footer .f-brand:hover .name{color:var(--accent);}
     footer .updated .tag{color:var(--navy-700);font-weight:700;background:var(--navy-50);
       padding:.12rem .5rem;border-radius:var(--radius-md);margin-left:.3rem;}
+    footer .foot-right{display:flex;flex-direction:column;align-items:flex-end;gap:.15rem;}
+    footer .version{font-size:.68rem;color:var(--text-subtle);letter-spacing:.05em;font-weight:600;}
 
     @media (max-width:720px){ .topbar-search{display:none;} .hero::after{font-size:7rem;} }
     @media (max-width:640px){
@@ -198,7 +200,10 @@
       <span class="plate mini"><span class="dpm">DPM</span></span>
       <span class="name">Dossani Paradise Management</span>
     </a>
-    <div class="updated">Updated<span class="tag" id="footer-date">July 2026</span></div>
+    <div class="foot-right">
+      <div class="updated">Updated<span class="tag" id="footer-date">July 2026</span></div>
+      <div class="version">v2.7</div>
+    </div>
   </footer>
 
   <script>
