@@ -19,6 +19,18 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800;900&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Mulish:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
 
+  <!-- Decide the sign-in gate's opening state BEFORE first paint. Without this,
+       a returning District Manager sees the board flash behind the gate for a
+       frame. "gate-off" simply means "this browser already made a choice". -->
+  <script>
+    (function(){
+      try{
+        var s=JSON.parse(localStorage.getItem("dpm_dm_portal_session")||"null");
+        if(s&&(s.guest||(s.email&&s.pw)))document.documentElement.classList.add("gate-off");
+      }catch(e){}
+    })();
+  </script>
+
   <style>
     :root{
       --navy-950:#0d0a35; --navy-900:#14104a; --navy-800:#1b1660; --navy-700:#251d7f;
@@ -94,6 +106,23 @@
     .hero h1{font-family:var(--font-display);font-weight:700;color:#fff;font-size:clamp(1.6rem,3.4vw,2.4rem);
       line-height:1.04;letter-spacing:var(--tracking-wide);}
 
+    /* Who's using the portal. Lives in the hero because the top bar is hidden
+       by the fit-to-window stage. */
+    .who{display:inline-flex;align-items:center;gap:.5rem;margin-top:.6rem;padding:.24rem .34rem .24rem .68rem;
+      border-radius:var(--radius-pill);background:rgba(255,255,255,.08);
+      border:1px solid rgba(199,195,241,.22);font-size:.76rem;color:var(--navy-100);max-width:100%;}
+    .who[hidden]{display:none;}
+    .who-dot{width:7px;height:7px;border-radius:50%;background:#3ecf8e;flex-shrink:0;
+      box-shadow:0 0 0 3px rgba(62,207,142,.18);}
+    .who.is-guest .who-dot{background:var(--gray-400);box-shadow:0 0 0 3px rgba(147,154,168,.18);}
+    .who-text{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600;}
+    .who-text b{color:#fff;font-weight:700;}
+    .who-btn{font-family:var(--font-sans);font-size:.72rem;font-weight:700;letter-spacing:.02em;
+      color:#fff;background:rgba(232,9,27,.9);border:none;border-radius:var(--radius-pill);
+      padding:.24rem .7rem;cursor:pointer;flex-shrink:0;transition:background .15s ease,transform .15s ease;}
+    .who-btn:hover{background:var(--red-600);transform:translateY(-1px);}
+    .who-btn:focus-visible{outline:2px solid #fff;outline-offset:2px;}
+
     /* Search field (top bar only) */
     .field{display:flex;align-items:center;gap:.6rem;border-radius:var(--radius-lg);padding:0 .8rem;
       transition:box-shadow .18s ease,border-color .18s ease;
@@ -126,6 +155,18 @@
     .tile:focus-visible{outline:2px solid var(--accent);outline-offset:3px;}
     .board-top .tile{border-color:var(--navy-200);box-shadow:var(--shadow-md);
       background:linear-gradient(180deg,var(--navy-50),#fff);}
+
+    /* The icon needs a non-clipping parent so the PayMi count badge can sit
+       proudly outside the icon's rounded corner. .tile-icon itself keeps
+       overflow:hidden so logos stay inside their rounded square. */
+    .tile-iconwrap{position:relative;display:grid;place-items:center;flex-shrink:0;}
+    .tile-badge{position:absolute;top:-7px;right:-9px;z-index:2;min-width:20px;height:20px;
+      padding:0 5px;border-radius:var(--radius-pill);background:var(--red-600);color:#fff;
+      font-family:var(--font-sans);font-weight:800;font-size:.68rem;line-height:20px;
+      text-align:center;letter-spacing:.01em;border:2px solid var(--surface-card);
+      box-shadow:0 2px 6px rgba(198,8,25,.42);pointer-events:none;
+      font-variant-numeric:tabular-nums;}
+    .tile-badge[hidden]{display:none;}
 
     .tile-icon{width:42px;height:42px;border-radius:10px;flex-shrink:0;display:grid;place-items:center;
       overflow:hidden;background:var(--navy-50);border:1px solid var(--navy-100);}
@@ -179,6 +220,81 @@
     #stage .board-grid{display:flex;flex-wrap:wrap;justify-content:center;gap:14px;margin:0 auto;width:calc(var(--cols) * var(--tilew) + (var(--cols) - 1) * 14px + 2px);}
     #stage .board-grid .tile{width:var(--tilew);}
     #stage footer{max-width:none;padding:10px 20px 14px;}
+
+    /* ---- Sign-in gate ----------------------------------------------------
+       Deliberately OUTSIDE #fit so the fit-to-window transform never scales
+       or blurs the form. "gate-off" on <html> is the single source of truth
+       for whether the gate is showing. ------------------------------------ */
+    #gate{position:fixed;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center;
+      padding:1.1rem;overflow:auto;-webkit-overflow-scrolling:touch;
+      background:
+        radial-gradient(120% 120% at 88% -30%, rgba(232,9,27,.20), transparent 55%),
+        radial-gradient(90% 120% at 6% 130%, rgba(67,57,196,.34), transparent 55%),
+        linear-gradient(158deg, var(--navy-950) 0%, var(--navy-800) 58%, var(--navy-700) 100%);}
+    html.gate-off #gate{display:none;}
+
+    .gate-card{width:100%;max-width:392px;background:var(--surface-card);border-radius:var(--radius-xl);
+      box-shadow:0 24px 60px rgba(9,6,32,.5);padding:1.6rem 1.5rem 1.35rem;
+      display:flex;flex-direction:column;align-items:center;text-align:center;margin:auto;
+      animation:gateIn .32s var(--ease) both;}
+    @keyframes gateIn{from{opacity:0;transform:translateY(10px) scale(.985)}to{opacity:1;transform:none}}
+    .gate-card .plate{margin-bottom:.8rem;}
+    .gate-title{font-family:var(--font-display);font-weight:700;color:var(--text-heading);
+      font-size:1.16rem;letter-spacing:var(--tracking-wide);line-height:1.2;}
+    .gate-sub{font-family:var(--font-serif);font-size:.95rem;color:var(--text-muted);
+      margin-top:.3rem;line-height:1.4;font-style:italic;}
+
+    .gate-form{width:100%;margin-top:1.15rem;display:flex;flex-direction:column;gap:.62rem;text-align:left;}
+    .gate-label{font-size:.7rem;font-weight:800;letter-spacing:var(--tracking-wider);
+      text-transform:uppercase;color:var(--text-muted);margin-bottom:.28rem;display:block;}
+    .gate-input{width:100%;font-family:var(--font-sans);font-size:.92rem;color:var(--text-body);
+      background:var(--gray-50);border:1px solid var(--border-subtle);border-radius:var(--radius-lg);
+      padding:.6rem .8rem;outline:none;transition:border-color .16s ease,box-shadow .16s ease,background .16s ease;}
+    .gate-input:focus{border-color:var(--navy-400);background:#fff;box-shadow:0 0 0 3px rgba(108,99,216,.16);}
+    .gate-input::placeholder{color:var(--text-subtle);}
+    .gate-input:disabled{opacity:.6;cursor:not-allowed;}
+
+    .gate-btn{width:100%;font-family:var(--font-sans);font-weight:800;font-size:.86rem;
+      letter-spacing:var(--tracking-wide);color:#fff;background:var(--navy-700);border:none;
+      border-radius:var(--radius-lg);padding:.68rem 1rem;cursor:pointer;margin-top:.2rem;
+      display:inline-flex;align-items:center;justify-content:center;gap:.5rem;
+      transition:background .16s ease,transform .16s ease,box-shadow .16s ease;}
+    .gate-btn:hover:not(:disabled){background:var(--navy-600);transform:translateY(-1px);box-shadow:var(--shadow-navy);}
+    .gate-btn:disabled{opacity:.72;cursor:progress;transform:none;}
+    .gate-btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+
+    .gate-err{display:none;font-size:.79rem;line-height:1.4;color:#8d1220;background:#fdeaec;
+      border:1px solid #f4c2c8;border-left:3px solid var(--red-600);border-radius:var(--radius-md);
+      padding:.5rem .68rem;}
+    .gate-err.show{display:block;}
+
+    .gate-or{display:flex;align-items:center;gap:.7rem;width:100%;margin:1.05rem 0 .8rem;
+      color:var(--text-subtle);font-size:.66rem;font-weight:700;letter-spacing:var(--tracking-wider);
+      text-transform:uppercase;}
+    .gate-or::before,.gate-or::after{content:"";flex:1;height:1px;background:var(--divider);}
+
+    .gate-guest{width:100%;font-family:var(--font-sans);font-weight:700;font-size:.82rem;
+      color:var(--navy-700);background:#fff;border:1px solid var(--navy-200);border-radius:var(--radius-lg);
+      padding:.62rem .9rem;cursor:pointer;line-height:1.35;
+      transition:background .16s ease,border-color .16s ease,transform .16s ease;}
+    .gate-guest:hover{background:var(--navy-50);border-color:var(--navy-400);transform:translateY(-1px);}
+    .gate-guest:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+
+    .gate-foot{font-size:.68rem;color:var(--text-subtle);margin-top:.95rem;line-height:1.45;}
+    .gate-cancel{position:absolute;top:.9rem;right:1rem;background:rgba(255,255,255,.1);border:none;
+      color:#fff;font-size:1.1rem;line-height:1;width:32px;height:32px;border-radius:50%;cursor:pointer;
+      display:none;align-items:center;justify-content:center;transition:background .15s ease;}
+    .gate-cancel:hover{background:rgba(255,255,255,.22);}
+    #gate.can-cancel .gate-cancel{display:flex;}
+
+    .spin{width:13px;height:13px;border:2px solid rgba(255,255,255,.32);border-top-color:#fff;
+      border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0;}
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    @media (max-width:420px){
+      .gate-card{padding:1.35rem 1.15rem 1.15rem;}
+      .gate-title{font-size:1.05rem;}
+    }
   </style>
 </head>
 
@@ -205,6 +321,11 @@
       <span class="plate"><span class="dpm">DPM</span><span class="plate-rule"></span></span>
       <span class="eyebrow">Dossani Paradise Management</span>
       <h1>District Manager Portal</h1>
+      <div class="who" id="who" hidden>
+        <span class="who-dot" aria-hidden="true"></span>
+        <span class="who-text" id="who-text"></span>
+        <button type="button" class="who-btn" id="who-btn"></button>
+      </div>
     </div>
   </section>
 
@@ -220,11 +341,48 @@
       <span class="name">Dossani Paradise Management</span>
     </a>
     <div class="foot-right">
-      <div class="updated">Updated<span class="tag" id="footer-date">July 2026</span></div>
-      <div class="version">v2.7</div>
+      <div class="updated">Updated<span class="tag" id="footer-date">August 2026</span></div>
+      <div class="version">v2.8</div>
     </div>
   </footer>
   </div></div>
+
+  <!-- ====================================================================
+       SIGN-IN GATE — sits outside #fit so it is never scaled by the
+       fit-to-window transform.
+       ==================================================================== -->
+  <div id="gate" role="dialog" aria-modal="true" aria-labelledby="gate-title" aria-describedby="gate-sub">
+    <button type="button" class="gate-cancel" id="gate-cancel" aria-label="Close sign in">&times;</button>
+    <div class="gate-card">
+      <span class="plate"><span class="dpm">DPM</span><span class="plate-rule"></span></span>
+      <h2 class="gate-title" id="gate-title">Dossani Paradise Web Portal</h2>
+      <p class="gate-sub" id="gate-sub">Sign in to see your notifications.</p>
+
+      <div class="gate-form">
+        <div>
+          <label class="gate-label" for="gate-email">Work email</label>
+          <input class="gate-input" type="email" id="gate-email" autocomplete="username"
+                 inputmode="email" spellcheck="false" autocapitalize="off" autocorrect="off"
+                 placeholder="you@dossaniparadise.com" />
+        </div>
+        <div>
+          <label class="gate-label" for="gate-pw">Password</label>
+          <input class="gate-input" type="password" id="gate-pw" autocomplete="current-password"
+                 placeholder="Your password" />
+        </div>
+        <div class="gate-err" id="gate-err" role="alert" aria-live="polite"></div>
+        <button type="button" class="gate-btn" id="gate-btn">Sign In</button>
+      </div>
+
+      <div class="gate-or">or</div>
+
+      <button type="button" class="gate-guest" id="gate-guest">
+        I'm not a District Manager &mdash; use this page not signed in
+      </button>
+
+      <p class="gate-foot">Not signed in, the portal works normally &mdash; you just won't see your notifications.</p>
+    </div>
+  </div>
 
   <script>
   /* ======================================================================
@@ -305,7 +463,18 @@
     const a=document.createElement("a"); a.className="tile"; a.href=app.url;
     a.target="_blank"; a.rel="noopener noreferrer";
     a.dataset.search=(app.name+" "+(app.desc||"")+" "+domainOf(app.url)).toLowerCase();
-    a.appendChild(buildIcon(app));
+
+    // Icon goes in a non-clipping wrapper so a corner badge can overhang it.
+    const iconWrap=document.createElement("div"); iconWrap.className="tile-iconwrap";
+    iconWrap.appendChild(buildIcon(app));
+    if(isPaymiApp(app)){
+      a.id="paymi-tile";
+      const badge=document.createElement("span");
+      badge.className="tile-badge"; badge.id="paymi-badge"; badge.hidden=true;
+      iconWrap.appendChild(badge);
+    }
+    a.appendChild(iconWrap);
+
     const body=document.createElement("div"); body.className="tile-body";
     const nm=document.createElement("div"); nm.className="tile-name"; nm.textContent=app.name;
     const ds=document.createElement("div"); ds.className="tile-desc"; ds.textContent=app.desc||domainOf(app.url);
@@ -337,11 +506,373 @@
   }
   sTop.addEventListener("input",e=>filter(e.target.value));
   document.addEventListener("keydown",e=>{
+    // While the sign-in gate owns the screen it also owns the keyboard.
+    if(!document.documentElement.classList.contains("gate-off")) return;
     if(e.key==="/"&&document.activeElement.tagName!=="INPUT"){e.preventDefault();sTop.focus();}
     else if(e.key==="Escape"&&document.activeElement===sTop){ sTop.value=""; filter(""); sTop.blur(); }
   });
 
+  /* ======================================================================
+     PORTAL SIGN-IN  +  NOTIFICATION BADGES
+     ----------------------------------------------------------------------
+     Identity comes from the SAME alignment master the rest of the suite
+     uses, so one person has one identity everywhere. Three roles sign in
+     here, each with the shared password FixMi already uses:
+
+       District Manager  DM@76051         stored as an "areaCoach"
+       Director of Ops   DO@76051         stored as a "director"
+       Overwatch         Overwatch@76051  Rahim / IT Support
+
+     The portal renames itself to match whoever signed in.
+
+     Today the only notification is the PayMi pending-invoice count. PayMi's
+     approval chains embed the signer's directory id, which is the same id
+     this sign-in resolves, so no extra mapping is needed. The read is a
+     plain REST GET against PayMi's Firestore — read-only, no SDK, and a
+     failure simply means no badge rather than a broken page. To add another
+     notification later, give its tile a badge and update setBadge's caller.
+     ====================================================================== */
+
+  /* ---- Things you might actually want to change ---- */
+  const ALIGNMENT_API="https://alignment-api-khaki.vercel.app/api/dpm-alignment";
+  const PAYMI_FS="https://firestore.googleapis.com/v1/projects/gen-lang-client-0357067758/databases/(default)/documents/invoices?pageSize=300&key=AIzaSyAxW6wajL9PH1Wlw3_QuBXgAMFgYWjkJp8";
+  const ROLE_PASSWORDS={ coach:"DM@76051", director:"DO@76051", admin:"Overwatch@76051" };
+  const ADMIN_EMAILS=["itsupport@dossaniparadise.com","rahim@dossaniparadise.com"];
+  /* What the portal calls itself, per role. Anyone not signed in sees the
+     default. */
+  const PORTAL_NAMES={ coach:"District Manager Portal",
+                       director:"Director of Operations Portal",
+                       admin:"Overwatch Portal" };
+  const PORTAL_DEFAULT="District Manager Portal";
+  const PAYMI_TILE_NAME="PayMi";          // which tile wears the badge
+  const SESS_KEY="dpm_dm_portal_session"; // must match the pre-paint script in <head>
+  const PAYMI_REFRESH_MS=5*60*1000;       // background re-check
+  const PAYMI_FOCUS_MIN_GAP_MS=60*1000;   // don't re-check on every tab focus
+
+  let SESSION=null, MASTER=null, paymiTimer=null, lastPaymiCheck=0, gateDismissable=false;
+
+  function isPaymiApp(app){
+    return ((app&&app.name)||"").trim().toLowerCase()===PAYMI_TILE_NAME.trim().toLowerCase();
+  }
+
+  /* ---- Stored choice ---------------------------------------------------
+     Either {guest:true} or {email,pw,...snapshot}. The snapshot lets a
+     returning DM in instantly; the credentials let us silently re-verify
+     against the directory afterwards, so someone removed from the DM list
+     stops getting in. ---------------------------------------------------- */
+  function readStored(){ try{ return JSON.parse(localStorage.getItem(SESS_KEY)||"null"); }catch(e){ return null; } }
+  function writeStored(o){ try{ localStorage.setItem(SESS_KEY,JSON.stringify(o)); }catch(e){} }
+  function clearStored(){ try{ localStorage.removeItem(SESS_KEY); }catch(e){} }
+
+  /* ---- Directory ---- */
+  async function fetchMaster(){
+    const bust=(ALIGNMENT_API.includes("?")?"&":"?")+"_="+Date.now();
+    const ctl=new AbortController();
+    const timer=setTimeout(()=>ctl.abort(),15000);
+    try{
+      const res=await fetch(ALIGNMENT_API+bust,{cache:"no-store",signal:ctl.signal});
+      if(!res.ok) throw new Error("Directory returned HTTP "+res.status);
+      return await res.json();
+    } finally { clearTimeout(timer); }
+  }
+
+  /* Mirrors FixMi's resolveSession — same order, same passwords — so one
+     person gets one identity suite-wide. Admin is checked first: Rahim and
+     IT Support must never resolve as anything else. */
+  function resolveSession(email,pw){
+    const lc=(email||"").trim().toLowerCase();
+    if(!lc) return {error:"Enter your work email."};
+    if(!pw)  return {error:"Enter your password."};
+    const emailIs=(obj,id)=>(((obj[id]||{}).email)||"").trim().toLowerCase()===lc;
+
+    const admins=(MASTER&&MASTER.admins)||{};
+    if(ADMIN_EMAILS.includes(lc)||Object.keys(admins).some(id=>emailIs(admins,id))){
+      if(pw!==ROLE_PASSWORDS.admin) return {error:"That password doesn't match the Overwatch role."};
+      const a=Object.values(admins).find(x=>(((x||{}).email)||"").trim().toLowerCase()===lc);
+      const known={"rahim@dossaniparadise.com":"Rahim Virani","itsupport@dossaniparadise.com":"IT Support"}[lc];
+      return {email:lc,role:"admin",name:(a&&a.name)||known||"Administrator"};
+    }
+
+    const dirs=(MASTER&&MASTER.directors)||{};
+    const dId=Object.keys(dirs).find(id=>emailIs(dirs,id));
+    if(dId){
+      if(pw!==ROLE_PASSWORDS.director) return {error:"That password doesn't match the Director of Operations role."};
+      return {email:lc,role:"director",name:dirs[dId].name||"Director of Operations",refId:dId};
+    }
+
+    const coaches=(MASTER&&MASTER.areaCoaches)||{};
+    const cId=Object.keys(coaches).find(id=>emailIs(coaches,id));
+    if(cId){
+      if(pw!==ROLE_PASSWORDS.coach) return {error:"That password doesn't match the District Manager role."};
+      return {email:lc,role:"coach",name:coaches[cId].name||"District Manager",refId:cId};
+    }
+
+    return {error:"We couldn't find that email in the Dossani directory. Check it's the address on file, or continue without signing in below."};
+  }
+
+  /* ---- PayMi ----------------------------------------------------------- */
+  /* Which PayMi ids this session answers to. DMs and Directors sign with
+     their directory id; Rahim and IT Support sign PayMi's Rate Verification
+     step under fixed ids. */
+  function paymiIdsFor(sess){
+    if(!sess) return [];
+    if(sess.role==="coach"||sess.role==="director") return sess.refId?[sess.refId]:[];
+    if(sess.role==="admin"){
+      const e=(sess.email||"").toLowerCase();
+      if(e==="rahim@dossaniparadise.com") return ["rate:rahim"];
+      if(e==="itsupport@dossaniparadise.com") return ["rate:it","admin:itsupport@dossaniparadise.com"];
+    }
+    return [];
+  }
+
+  /* Firestore REST hands back typed JSON ({stringValue:…}). Decode enough of it. */
+  function fsVal(v){
+    if(v==null) return null;
+    if("stringValue"  in v) return v.stringValue;
+    if("integerValue" in v) return Number(v.integerValue);
+    if("doubleValue"  in v) return v.doubleValue;
+    if("booleanValue" in v) return v.booleanValue;
+    if("nullValue"    in v) return null;
+    if("mapValue"     in v){ const o={}, f=(v.mapValue&&v.mapValue.fields)||{};
+      for(const k in f) o[k]=fsVal(f[k]); return o; }
+    if("arrayValue"   in v) return ((v.arrayValue&&v.arrayValue.values)||[]).map(fsVal);
+    return null;
+  }
+
+  /* One invoice counts once, however many of its chains are waiting on me. */
+  function paymiCountFor(myIds,docs){
+    const ids=Array.isArray(myIds)?myIds:[myIds];
+    let n=0;
+    docs.forEach(d=>{
+      const chains=fsVal((d.fields||{}).chains)||[];
+      const waiting=chains.some(c=>{
+        if(!c||c.status!=="PENDING") return false;
+        const step=(c.steps||[]).find(st=>st&&st.role===c.currentStage);
+        return !!step&&(step.userIds||[]).some(u=>ids.includes(u));
+      });
+      if(waiting) n++;
+    });
+    return n;
+  }
+
+  async function refreshPaymiCount(){
+    const myIds=paymiIdsFor(SESSION);
+    if(!myIds.length){ setBadge(0); return; }
+    try{
+      lastPaymiCheck=Date.now();
+      const res=await fetch(PAYMI_FS,{cache:"no-store"});
+      if(!res.ok){
+        console.warn("[PayMi] Firestore read failed: HTTP "+res.status+" — no badge shown.");
+        return; // leave the last known count rather than flashing to zero
+      }
+      const data=await res.json();
+      const docs=data.documents||[];
+      const n=paymiCountFor(myIds,docs);
+      console.log("[PayMi] "+docs.length+" invoices in DB · pending on me: "+n+" · me="+myIds.join("|"));
+      setBadge(n);
+    }catch(e){
+      console.warn("[PayMi] check failed: "+((e&&e.message)||e));
+    }
+  }
+
+  function setBadge(n){
+    const badge=document.getElementById("paymi-badge");
+    const tile=document.getElementById("paymi-tile");
+    const count=Number(n)||0;
+    if(badge){
+      if(count<1){ badge.hidden=true; badge.textContent=""; }
+      else{ badge.hidden=false; badge.textContent=count>99?"99+":String(count); }
+    }
+    if(tile){
+      const base="PayMi — Invoice tracking";
+      const note=count<1?"" : count===1
+        ? " — 1 invoice pending your approval"
+        : " — "+count+" invoices pending your approval";
+      tile.setAttribute("aria-label",base+note);
+      if(note) tile.title=note.replace(/^ — /,""); else tile.removeAttribute("title");
+    }
+  }
+
+  function startPaymi(){
+    stopPaymi();
+    refreshPaymiCount();
+    paymiTimer=setInterval(refreshPaymiCount,PAYMI_REFRESH_MS);
+  }
+  function stopPaymi(){ if(paymiTimer) clearInterval(paymiTimer); paymiTimer=null; }
+
+  document.addEventListener("visibilitychange",()=>{
+    if(document.visibilityState==="visible"&&SESSION&&
+       Date.now()-lastPaymiCheck>PAYMI_FOCUS_MIN_GAP_MS) refreshPaymiCount();
+  });
+
+  /* ---- Gate ------------------------------------------------------------ */
+  const gateEl=document.getElementById("gate");
+  const gEmail=document.getElementById("gate-email");
+  const gPw=document.getElementById("gate-pw");
+  const gErr=document.getElementById("gate-err");
+  const gBtn=document.getElementById("gate-btn");
+  const gGuest=document.getElementById("gate-guest");
+  const gCancel=document.getElementById("gate-cancel");
+
+  function gateOpen(){ return !document.documentElement.classList.contains("gate-off"); }
+
+  function openGate(canCancel){
+    gateDismissable=!!canCancel;
+    gateEl.classList.toggle("can-cancel",gateDismissable);
+    document.documentElement.classList.remove("gate-off");
+    const fit=document.getElementById("fit");
+    if(fit){ fit.setAttribute("aria-hidden","true"); try{ fit.inert=true; }catch(e){} }
+    showErr("");
+    setTimeout(()=>{ (gEmail.value?gPw:gEmail).focus(); },60);
+  }
+
+  function closeGate(){
+    document.documentElement.classList.add("gate-off");
+    const fit=document.getElementById("fit");
+    if(fit){ fit.removeAttribute("aria-hidden"); try{ fit.inert=false; }catch(e){} }
+    gPw.value="";
+  }
+
+  function showErr(msg){
+    gErr.textContent=msg||"";
+    gErr.classList.toggle("show",!!msg);
+  }
+  function busy(on){
+    gBtn.disabled=on; gEmail.disabled=on; gPw.disabled=on; gGuest.disabled=on;
+    gBtn.innerHTML=on?'<span class="spin"></span>Checking…':"Sign In";
+  }
+
+  async function doSignIn(){
+    if(gBtn.disabled) return;
+    const email=gEmail.value.trim().toLowerCase(), pw=gPw.value;
+    showErr("");
+    if(!email||!pw){ showErr(!email?"Enter your work email.":"Enter your password."); return; }
+    busy(true);
+    try{ MASTER=await fetchMaster(); }
+    catch(e){
+      busy(false);
+      showErr("Couldn't reach the directory to check your sign-in. Check your connection and try again, or continue without signing in.");
+      return;
+    }
+    const sess=resolveSession(email,pw);
+    busy(false);
+    if(sess.error){ showErr(sess.error); gPw.select(); return; }
+    SESSION=sess;
+    writeStored({email:sess.email,pw:pw,name:sess.name,role:sess.role,refId:sess.refId||null});
+    closeGate(); renderWho(); startPaymi();
+  }
+
+  function useUnsigned(){
+    SESSION=null; stopPaymi(); setBadge(0);
+    writeStored({guest:true});
+    closeGate(); renderWho();
+  }
+
+  function signOut(){
+    SESSION=null; MASTER=null; stopPaymi(); setBadge(0);
+    clearStored();
+    document.documentElement.classList.remove("gate-off");
+    gEmail.value=""; gPw.value="";
+    renderWho();
+    openGate(false);
+  }
+
+  gBtn.addEventListener("click",doSignIn);
+  gGuest.addEventListener("click",useUnsigned);
+  gCancel.addEventListener("click",()=>{ if(gateDismissable) closeGate(); });
+  [gEmail,gPw].forEach(el=>el.addEventListener("keydown",e=>{
+    if(e.key==="Enter"){ e.preventDefault(); doSignIn(); }
+  }));
+
+  /* Keep Tab inside the dialog while it owns the screen, and let Esc back out
+     only when there is a previous choice to fall back to. */
+  gateEl.addEventListener("keydown",e=>{
+    if(e.key==="Escape"&&gateDismissable){ e.preventDefault(); closeGate(); return; }
+    if(e.key!=="Tab") return;
+    const f=[...gateEl.querySelectorAll("button,input")].filter(el=>!el.disabled&&el.offsetParent!==null);
+    if(!f.length) return;
+    const first=f[0], last=f[f.length-1];
+    if(e.shiftKey&&document.activeElement===first){ e.preventDefault(); last.focus(); }
+    else if(!e.shiftKey&&document.activeElement===last){ e.preventDefault(); first.focus(); }
+  });
+
+  /* ---- Portal identity ---------------------------------------------------
+     The portal takes the name of whoever is signed in. The hero heading is
+     the one that matters visually — the top bar is hidden by the
+     fit-to-window stage — but the tab title and top bar follow along so a
+     bookmarked tab and a non-scaled view read correctly too. */
+  function portalName(){
+    return (SESSION&&PORTAL_NAMES[SESSION.role])||PORTAL_DEFAULT;
+  }
+  function applyPortalIdentity(){
+    const name=portalName();
+    const h1=document.querySelector(".hero h1");
+    if(h1) h1.textContent=name;
+    const word=document.querySelector(".topbar-word");
+    if(word) word.textContent=name;
+    const brand=document.querySelector(".topbar-brand");
+    if(brand) brand.setAttribute("aria-label",name+" home");
+    document.title="Dossani · "+name;
+  }
+
+  /* ---- Identity chip ---- */
+  function renderWho(){
+    applyPortalIdentity();
+    const who=document.getElementById("who");
+    const txt=document.getElementById("who-text");
+    const btn=document.getElementById("who-btn");
+    if(!who) return;
+    who.hidden=false;
+    txt.textContent="";
+    if(SESSION){
+      who.classList.remove("is-guest");
+      const b=document.createElement("b"); b.textContent=SESSION.name;
+      txt.append(document.createTextNode("Signed in as "),b);
+      btn.textContent="Sign out";
+      btn.onclick=signOut;
+    }else{
+      who.classList.add("is-guest");
+      txt.textContent="Not signed in";
+      btn.textContent="Sign in";
+      btn.onclick=()=>openGate(true);
+    }
+    if(window.__fit) window.__fit();
+  }
+
+  /* ---- Boot ------------------------------------------------------------ */
+  async function bootPortal(){
+    const saved=readStored();
+
+    if(saved&&saved.guest){ closeGate(); renderWho(); return; }
+
+    if(saved&&saved.email&&saved.pw){
+      // Trust the stored snapshot immediately so the board is usable offline
+      // and there is no login flash, then quietly confirm it still holds.
+      SESSION={email:saved.email,role:saved.role||"coach",name:saved.name||"District Manager",refId:saved.refId||null};
+      closeGate(); renderWho(); startPaymi();
+      try{
+        MASTER=await fetchMaster();
+        const sess=resolveSession(saved.email,saved.pw);
+        if(sess.error){                      // removed from the list, or password rotated
+          SESSION=null; stopPaymi(); setBadge(0); clearStored();
+          renderWho(); openGate(false); showErr(sess.error);
+        }else if(sess.refId!==SESSION.refId||sess.name!==SESSION.name){
+          SESSION=sess;                      // directory moved on; follow it
+          writeStored({email:sess.email,pw:saved.pw,name:sess.name,role:sess.role,refId:sess.refId||null});
+          renderWho(); refreshPaymiCount();
+        }
+      }catch(e){
+        console.warn("[Portal] Couldn't re-verify sign-in (offline?) — keeping the saved session.");
+      }
+      return;
+    }
+
+    renderWho();
+    openGate(false);
+  }
+
   render();
+  bootPortal();
 
   /* ---- Scale the stage to fill the window; pick the best column count ---- */
   (function(){
