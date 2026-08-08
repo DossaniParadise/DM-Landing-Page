@@ -44,6 +44,8 @@
       --text-heading:var(--navy-800); --text-body:var(--gray-800);
       --text-muted:var(--gray-500); --text-subtle:var(--gray-400);
       --surface-page:var(--gray-50); --surface-card:#ffffff;
+      /* 40% brand red; --alert-ink is the darkest text that stays readable on it */
+      --alert-wash:rgba(232,9,27,.4); --alert-ink:#6d1520;
       --border-subtle:var(--gray-200); --divider:var(--gray-200);
 
       --font-display:'Cinzel','Trajan Pro','Times New Roman',serif;
@@ -155,6 +157,23 @@
     .tile:focus-visible{outline:2px solid var(--accent);outline-offset:3px;}
     .board-top .tile{border-color:var(--navy-200);box-shadow:var(--shadow-md);
       background:linear-gradient(180deg,var(--navy-50),#fff);}
+
+    /* ---- Tile with pending notifications ---------------------------------
+       A 20px badge is easy to miss on a board of 18 tiles, so the whole card
+       takes a 40% wash of the brand red. The wash is composited over the card
+       colour explicitly rather than set as a translucent background-color,
+       because the page behind the tile is grey — a plain rgba() would let that
+       grey muddy the result, and would tint the featured tile's gradient
+       differently from every other tile. */
+    .tile.has-alerts,
+    .board-top .tile.has-alerts{
+      background:linear-gradient(0deg,var(--alert-wash),var(--alert-wash)),var(--surface-card);
+      border-color:rgba(198,8,25,.42);}
+    .tile.has-alerts:hover{border-color:rgba(198,8,25,.6);}
+    /* --text-muted only clears 2.4:1 on the wash, so the description shifts to
+       a dark maroon (5.8:1). The tile name is navy and already clears 8:1. */
+    .tile.has-alerts .tile-desc{color:var(--alert-ink);}
+    .tile.has-alerts .tile-icon{background:#fff;border-color:rgba(198,8,25,.2);}
 
     /* The icon needs a non-clipping parent so the PayMi count badge can sit
        proudly outside the icon's rounded corner. .tile-icon itself keeps
@@ -342,7 +361,7 @@
     </a>
     <div class="foot-right">
       <div class="updated">Updated<span class="tag" id="footer-date">August 2026</span></div>
-      <div class="version">v2.9</div>
+      <div class="version">v3.0</div>
     </div>
   </footer>
   </div></div>
@@ -486,14 +505,26 @@
     return a;
   }
 
-  function render(){
+  function render(list){
+    const apps=list||APPS;
+    const old=root.querySelector(".board");
+    if(old) old.remove();
     const board=document.createElement("div"); board.className="board";
     const top=document.createElement("div"); top.className="board-top";
     const grid=document.createElement("div"); grid.className="board-grid";
-    if(APPS.length) top.appendChild(tile(APPS[0]));
-    APPS.slice(1).forEach(a=>grid.appendChild(tile(a)));
+    if(apps.length) top.appendChild(tile(apps[0]));
+    apps.slice(1).forEach(a=>grid.appendChild(tile(a)));
     board.append(top,grid);
     root.insertBefore(board,noResults);
+  }
+
+  /* Rebuild the board for the current session, then put back the things a
+     rebuild would otherwise throw away: badge counts and the live search. */
+  function renderBoard(){
+    render(appsForSession());
+    for(const k in BADGE_TILES) setBadge(k,COUNTS[k]||0);
+    if(sTop&&sTop.value.trim()) filter(sTop.value);
+    if(window.__fit) window.__fit();
   }
 
   const sTop=document.getElementById("search-top");
@@ -556,6 +587,11 @@
   const PORTAL_DEFAULT="District Manager Portal";
   /* Which tiles wear a badge: key -> exact tile name in APPS above. */
   const BADGE_TILES={ paymi:"PayMi", fixmi:"FixMi" };
+  /* C-Store operators don't run Burger King systems. These come off their
+     board, and Bitrix24 takes the featured slot RBI holds for BK. */
+  const CSTORE_HIDE=["RBI · Okta","Genius Back Office","PAR POS","SICOM",
+                     "RSI Web","RTI Oil","Flowers"];
+  const CSTORE_FEATURE="Bitrix24";
   const FIXMI_TICKETS_NODE="maintenanceTickets";
   /* FixMi calls a ticket "active" until it's Closed, which includes ones a
      tech already marked Finished. Those are done work awaiting paperwork, so
@@ -569,6 +605,7 @@
 
   let SESSION=null, MASTER=null, masterAt=0, pollTimer=null, lastCheck=0, gateDismissable=false;
   const TILE_BASE_LABEL={};   // badge key -> "PayMi — Invoice tracking"
+  const COUNTS={};            // badge key -> last known count, survives a re-render
 
   function badgeKeyFor(app){
     const n=((app&&app.name)||"").trim().toLowerCase();
@@ -732,6 +769,49 @@
     return [];
   }
 
+  /* ---- Division / C-Store board ----------------------------------------
+     Rather than keeping a list of C-Store people in sync by hand, the board
+     is derived: if none of the stores you're responsible for is a Burger
+     King, you get the C-Store board. Add or move a store in FindMi and this
+     follows automatically.
+
+     storeDivision() is copied from FindMi so all three apps classify a store
+     identically — division is a real field on the record, with name-matching
+     only as a fallback for stores nobody has tagged yet. KEEP IN SYNC. */
+  const DIVISION_KEYS=["bk","cstore","carwash","subway","other"];
+  const DIVISION_RULES=[
+    { key:"bk",      test:n=>/burger\s*king|\bbk\b/i.test(n) },
+    { key:"subway",  test:n=>/subway/i.test(n) },
+    { key:"carwash", test:n=>/car\s*wash|\bwash\b/i.test(n) },
+    { key:"cstore",  test:n=>/\bstop\b|quick\s*stop|travel\s*stop|truck\s*stop/i.test(n) },
+  ];
+  function storeDivision(rest){
+    const d=((rest&&rest.division)||"").trim();
+    if(d&&DIVISION_KEYS.includes(d)) return d;
+    const n=((rest&&rest.storeName)||"").trim();
+    for(const r of DIVISION_RULES) if(r.test(n)) return r.key;
+    return "other";
+  }
+
+  /* Deliberately fails toward the FULL board. Hiding a tool someone needs is
+     worse than showing one they don't, so anything we can't classify — no
+     session, no directory yet, no stores assigned — gets everything. */
+  function isCStoreUser(){
+    if(!SESSION) return false;
+    if(SESSION.role==="admin") return false;          // Overwatch spans both
+    if(!MASTER) return SESSION.cstore===true;         // restored verdict, pre-fetch
+    const stores=MASTER.restaurants||{};
+    const ids=myStoreIds();
+    if(!ids.length) return false;
+    return !ids.some(id=>storeDivision(stores[id])==="bk");
+  }
+
+  function appsForSession(){
+    if(!isCStoreUser()) return APPS;
+    const kept=APPS.filter(a=>!CSTORE_HIDE.includes(a.name));
+    const featured=kept.find(a=>a.name===CSTORE_FEATURE);
+    return featured?[featured,...kept.filter(a=>a!==featured)]:kept;
+  }
   function wantsEmergenciesOnly(){
     return !!SESSION&&(SESSION.role==="director"||SESSION.role==="admin");
   }
@@ -778,14 +858,16 @@
   };
 
   function setBadge(key,n){
+    const count=Number(n)||0;
+    COUNTS[key]=count;
     const badge=document.getElementById("badge-"+key);
     const tile=document.getElementById("tile-"+key);
-    const count=Number(n)||0;
     if(badge){
       if(count<1){ badge.hidden=true; badge.textContent=""; }
       else{ badge.hidden=false; badge.textContent=count>99?"99+":String(count); }
     }
     if(tile){
+      tile.classList.toggle("has-alerts",count>0);
       const base=TILE_BASE_LABEL[key]||tile.textContent.trim();
       const phrase=count<1?"":(BADGE_PHRASE[key]||(x=>x+" waiting"))(count);
       tile.setAttribute("aria-label",base+(phrase?" — "+phrase:""));
@@ -864,14 +946,16 @@
     busy(false);
     if(sess.error){ showErr(sess.error); gPw.select(); return; }
     SESSION=sess;
-    writeStored({email:sess.email,pw:pw,name:sess.name,role:sess.role,refId:sess.refId||null});
-    closeGate(); renderWho(); startNotifications();
+    SESSION.cstore=isCStoreUser();
+    writeStored({email:sess.email,pw:pw,name:sess.name,role:sess.role,
+                 refId:sess.refId||null,cstore:SESSION.cstore});
+    closeGate(); renderWho(); renderBoard(); startNotifications();
   }
 
   function useUnsigned(){
     SESSION=null; stopNotifications(); clearBadges();
     writeStored({guest:true});
-    closeGate(); renderWho();
+    closeGate(); renderWho(); renderBoard();
   }
 
   function signOut(){
@@ -879,7 +963,7 @@
     clearStored();
     document.documentElement.classList.remove("gate-off");
     gEmail.value=""; gPw.value="";
-    renderWho();
+    renderWho(); renderBoard();
     openGate(false);
   }
 
@@ -954,18 +1038,24 @@
     if(saved&&saved.email&&saved.pw){
       // Trust the stored snapshot immediately so the board is usable offline
       // and there is no login flash, then quietly confirm it still holds.
-      SESSION={email:saved.email,role:saved.role||"coach",name:saved.name||"District Manager",refId:saved.refId||null};
-      closeGate(); renderWho(); startNotifications();
+      SESSION={email:saved.email,role:saved.role||"coach",name:saved.name||"District Manager",
+               refId:saved.refId||null,cstore:saved.cstore===true};
+      closeGate(); renderWho(); renderBoard(); startNotifications();
       try{
         await loadMaster();
         const sess=resolveSession(saved.email,saved.pw);
         if(sess.error){                      // removed from the list, or password rotated
           SESSION=null; stopNotifications(); clearBadges(); clearStored();
           renderWho(); openGate(false); showErr(sess.error);
-        }else if(sess.refId!==SESSION.refId||sess.name!==SESSION.name){
-          SESSION=sess;                      // directory moved on; follow it
-          writeStored({email:sess.email,pw:saved.pw,name:sess.name,role:sess.role,refId:sess.refId||null});
-          renderWho(); refreshBadges();
+        }else{
+          // Directory may have moved this person, or re-tagged their stores.
+          const was=SESSION.cstore;
+          SESSION=sess; SESSION.cstore=isCStoreUser();
+          writeStored({email:sess.email,pw:saved.pw,name:sess.name,role:sess.role,
+                       refId:sess.refId||null,cstore:SESSION.cstore});
+          renderWho();
+          if(SESSION.cstore!==was) renderBoard();
+          refreshBadges();
         }
       }catch(e){
         console.warn("[Portal] Couldn't re-verify sign-in (offline?) — keeping the saved session.");
@@ -977,7 +1067,7 @@
     openGate(false);
   }
 
-  render();
+  renderBoard();
   bootPortal();
 
   /* ---- Scale the stage to fill the window; pick the best column count ---- */
